@@ -18,8 +18,7 @@ func NewGinRouter() *gin.Engine {
 	return router
 }
 
-func (h *Handlers) PromoRoutes(domain *gin.RouterGroup) {
-	domain.GET("/api/dva", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "dav"})
-	})
+func (handler *Handlers) PromoRoutes(domain *gin.RouterGroup) {
+	domain.POST("/api/promocode", handler.CreatePromocode)
+	domain.GET("/api/promocode/:code", handler.ApplyPromocode)
 }

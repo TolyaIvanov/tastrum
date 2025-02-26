@@ -16,7 +16,7 @@ import (
 )
 
 type App struct {
-	db  *sqlx.DB
+	DB  *sqlx.DB
 	gin *gin.Engine
 	cfg *config.Config
 	log *slog.Logger
@@ -24,7 +24,7 @@ type App struct {
 
 func NewApp(cfg *config.Config, log *slog.Logger) *App {
 	return &App{
-		db:  datasource.NewDatabase(cfg.Database, log),
+		DB:  datasource.NewDatabase(cfg.Database, log),
 		gin: v1.NewGinRouter(),
 		cfg: cfg,
 		log: log,
@@ -56,7 +56,7 @@ func (app *App) Run() error {
 		}
 
 		// Close the database connection
-		if err := app.db.Close(); err != nil {
+		if err := app.DB.Close(); err != nil {
 			app.log.Error("Database connection close failed: %v", err)
 		} else {
 			app.log.Info("Database connection closed")

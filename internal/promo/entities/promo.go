@@ -1,11 +1,8 @@
 package entities
 
-import "time"
-
-type promo struct {
-	ID        string    `db:"id"`
-	Name      string    `db:"name"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
-	Path      string    `db:"path"`
+type Promocode struct {
+	Code      string `json:"code"`
+	MaxUses   int    `json:"max_uses"`
+	UsesCount int    `json:"uses_count"`
+	Reward    string `json:"reward"`
 }

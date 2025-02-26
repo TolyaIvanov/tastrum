@@ -12,7 +12,7 @@ import (
 func NewDatabase(cfg config.Database, log *slog.Logger) *sqlx.DB {
 	fmt.Println("func NewDatabase(cfg config.Database, log *slog.Logger) *sqlx.DB")
 
-	db, errOpen := sqlx.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
+	DB, errOpen := sqlx.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
 		cfg.Host, cfg.Port, cfg.User, cfg.DBName, cfg.Password, cfg.SSLMode))
 	if errOpen != nil {
 		log.Error(errOpen.Error())
@@ -21,7 +21,7 @@ func NewDatabase(cfg config.Database, log *slog.Logger) *sqlx.DB {
 		log.Info("Database opened")
 	}
 
-	errPing := db.Ping()
+	errPing := DB.Ping()
 	if errPing != nil {
 		log.Error(errPing.Error())
 		return nil
@@ -29,5 +29,5 @@ func NewDatabase(cfg config.Database, log *slog.Logger) *sqlx.DB {
 		log.Error("DB pinged")
 	}
 
-	return db
+	return DB
 }

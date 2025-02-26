@@ -8,7 +8,7 @@ import (
 )
 
 type Redis interface {
-	Set(ctx context.Context, key string, value string, expiration time.Duration) error
+	Set(ctx context.Context, key string, value string, uses time.Duration) error
 	Get(ctx context.Context, key string) (data string, err error)
 	Del(ctx context.Context, key string) error
 }
