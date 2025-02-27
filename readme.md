@@ -14,7 +14,7 @@ docker compose exec app sh -c 'migrate -path /app/migrations -database "$DB_URL"
 ```
 
 тесты:
-
+прямо щас доделываю
 
 все апи
 - GET http://localhost:8083/check-health работает ли апи
