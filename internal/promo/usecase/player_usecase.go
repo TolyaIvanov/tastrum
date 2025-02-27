@@ -2,7 +2,11 @@ package usecase
 
 import "t_astrum/internal/promo/entities"
 
-// GetRewards юзкейс для всех players.
 func (u *Usecase) GetPlayers() ([]entities.Player, error) {
-	return u.Repository.GetPlayers()
+	players, err := u.Repository.GetPlayers()
+	if err != nil {
+		return nil, err
+	}
+
+	return players, nil
 }

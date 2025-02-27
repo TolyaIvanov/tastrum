@@ -20,7 +20,6 @@ func NewHandlers(usecase *usecase.Usecase) *Handlers {
 }
 
 func (h *Handlers) AdminPage(c *gin.Context) {
-	// Получить список игроков и наград из БД
 	players, err := h.Usecase.GetPlayers()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -39,20 +38,19 @@ func (h *Handlers) AdminPage(c *gin.Context) {
 // CreatePromocode создает новый промокод.
 func (h *Handlers) CreatePromocode(c *gin.Context) {
 	var request DTOs.CreatePromocodeRequest
-	if err := c.BindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
 		return
 	}
 
-	promocode := &entities.Promocode{
-		Code:     request.Code,
-		MaxUses:  request.MaxUses,
-		RewardId: request.RewardId,
-	}
+	promocode := entities.NewPromocode(request.Code, request.MaxUses, request.RewardId)
 
-	err := h.Usecase.CreatePromocode(promocode)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.Usecase.CreatePromocode(promocode); err != nil {
+		if errors.Is(err, entities.ErrPromocodeExists) {
+			c.JSON(http.StatusConflict, gin.H{"error": "promocode already exists"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create promocode: " + err.Error()})
 		return
 	}
 
@@ -61,7 +59,7 @@ func (h *Handlers) CreatePromocode(c *gin.Context) {
 		MaxUses: promocode.MaxUses,
 	}
 
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusCreated, response)
 }
 
 // ApplyPromocode применяет промокод и возвращает результат.
@@ -74,14 +72,15 @@ func (h *Handlers) ApplyPromocode(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Promocode not found"})
 			return
 		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Преобразуем Entity в DTO
 	response := DTOs.PromocodeResponse{
-		Code:    promocode.Code,
-		MaxUses: promocode.MaxUses,
+		Code:        promocode.Code,
+		CurrentUses: promocode.CurrentUses,
+		MaxUses:     promocode.MaxUses,
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -91,24 +90,39 @@ func (h *Handlers) ApplyPromocode(c *gin.Context) {
 func (h *Handlers) GetPlayers(c *gin.Context) {
 	players, err := h.Usecase.GetPlayers()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve players: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, DTOs.PlayersResponse{
-		Players: players,
-	})
+	var playersDTO []DTOs.PlayerResponse
+	for _, player := range players {
+		playersDTO = append(playersDTO, DTOs.PlayerResponse{
+			ID:        player.ID,
+			Username:  player.Username,
+			Email:     player.Email,
+			CreatedAt: player.CreatedAt,
+		})
+	}
+
+	c.JSON(http.StatusOK, DTOs.PlayersResponse{Players: playersDTO})
 }
 
 // GetRewards возвращает все reward из бд.
 func (h *Handlers) GetRewards(c *gin.Context) {
 	rewards, err := h.Usecase.GetRewards()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve rewards: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, DTOs.RewardsResponse{
-		Rewards: rewards,
-	})
+	var rewardsDTO []DTOs.RewardResponse
+	for _, reward := range rewards {
+		rewardsDTO = append(rewardsDTO, DTOs.RewardResponse{
+			ID:        reward.ID,
+			Reward:    reward.Reward,
+			CreatedAt: reward.CreatedAt,
+		})
+	}
+
+	c.JSON(http.StatusOK, DTOs.RewardsResponse{Rewards: rewardsDTO})
 }

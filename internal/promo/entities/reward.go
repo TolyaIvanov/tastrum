@@ -6,7 +6,7 @@ import (
 )
 
 type Reward struct {
-	Id         uuid.UUID `json:"id"`
-	Reward     string    `json:"reward"`
-	Created_at time.Time `json:"created_at"`
+	ID        uuid.UUID `json:"id" db:"id"`
+	Reward    string    `json:"reward" db:"reward"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
 }

@@ -6,5 +6,10 @@ import (
 
 // GetRewards юзкейс для всех наград.
 func (u *Usecase) GetRewards() ([]entities.Reward, error) {
-	return u.Repository.GetRewards()
+	rewards, err := u.Repository.GetRewards()
+	if err != nil {
+		return nil, err
+	}
+
+	return rewards, nil
 }

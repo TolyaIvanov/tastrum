@@ -13,7 +13,6 @@ func (u *Usecase) ApplyPromocode(code string) (*DTOs.PromocodeResponse, error) {
 		return nil, err
 	}
 
-	// Преобразуем в DTO перед возвратом
 	return &DTOs.PromocodeResponse{
 		Code:    promocode.Code,
 		MaxUses: promocode.MaxUses,
@@ -22,5 +21,13 @@ func (u *Usecase) ApplyPromocode(code string) (*DTOs.PromocodeResponse, error) {
 
 // CreatePromocode создает новый промокод.
 func (u *Usecase) CreatePromocode(promocode *entities.Promocode) error {
+	exists, err := u.Repository.PromocodeExists(promocode.Code)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return entities.ErrPromocodeExists
+	}
+
 	return u.Repository.CreatePromocode(promocode)
 }

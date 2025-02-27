@@ -9,8 +9,11 @@ import (
 func (r *Repository) GetRewards() ([]entities.Reward, error) {
 	var rewards []entities.Reward
 
-	query := fmt.Sprintf("SELECT * FROM rewards;")
+	query := "SELECT id, reward, created_at FROM rewards"
 	err := r.DB.Select(&rewards, query)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching rewards: %w", err)
+	}
 
-	return rewards, err
+	return rewards, nil
 }

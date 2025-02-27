@@ -29,17 +29,6 @@ CREATE TABLE promocodes
 
 CREATE INDEX idx_promocodes ON promocodes (code);
 
-CREATE TABLE applied_rewards
-(
-    id         UUID PRIMARY KEY   DEFAULT uuid_generate_v4(),
-    player_id  UUID REFERENCES players (id) ON DELETE CASCADE,
-    promo_id   UUID REFERENCES promocodes (id) ON DELETE CASCADE,
-    reward_id  UUID      REFERENCES rewards (id) ON DELETE SET NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_rewards_player_for_promo ON applied_rewards (player_id, promo_id, reward_id);
-
 INSERT INTO rewards (reward)
 VALUES ('reward111'),
        ('222reward'),

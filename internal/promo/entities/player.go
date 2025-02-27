@@ -6,8 +6,8 @@ import (
 )
 
 type Player struct {
-	Id         uuid.UUID `json:"id"`
-	Username   string    `json:"username"`
-	Email      string    `json:"email"`
-	Created_at time.Time `json:"created_at"`
+	ID        uuid.UUID `json:"id" db:"id"`
+	Username  string    `json:"username" db:"username"`
+	Email     string    `json:"email" db:"email"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
 }
