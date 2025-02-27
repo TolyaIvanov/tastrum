@@ -23,6 +23,7 @@ COPY --from=builder /app/server /app/server
 COPY --from=builder /app/configs /app/configs
 COPY --from=builder /app/migrations /app/migrations
 COPY --from=builder /app/.env /app/.env
+COPY --from=builder /app/web ./web
 COPY migrations /migrations
 
 CMD ["/app/server"]

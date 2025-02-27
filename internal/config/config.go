@@ -9,10 +9,9 @@ import (
 )
 
 type Config struct {
-	Env         string `yaml:"env" env-default:"local"`
-	HTTPServer  `yaml:"http_server"`
-	Database    `yaml:"database"`
-	RedisConfig `yaml:"redis"`
+	Env        string `yaml:"env" env-default:"local"`
+	HTTPServer `yaml:"http_server"`
+	Database   `yaml:"database"`
 }
 
 type HTTPServer struct {
@@ -28,13 +27,6 @@ type Database struct {
 	Password string `yaml:"password"`
 	DBName   string `yaml:"dbname"`
 	SSLMode  string `yaml:"sslmode"`
-}
-
-type RedisConfig struct {
-	Host     string `yaml:"host"`
-	Port     string `yaml:"port"`
-	Password string `yaml:"password"`
-	DB       int    `yaml:"db"`
 }
 
 func MustLoad() *Config {

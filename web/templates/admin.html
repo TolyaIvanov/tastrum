@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #f0f2f5;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 2rem;
+        }
+
+        h1 {
+            color: #1a1a1a;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 1rem;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1rem;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .player-name {
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 0.5rem;
+        }
+
+        .reward-desc {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        form {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>СОЗДАЕМ ПРОМОКОДЫ ОНЛАЙН БЕЗ РЕГИСТРАЦИИ</h1>
+
+    <!-- Players Section -->
+    <div class="section">
+        <h2>СПИСОК ИГРОКОВ</h2>
+        <div class="grid">
+            {{range .Players}}
+            <div class="card">
+                <div class="player-name">{{.Username}}</div>
+                <div class="player-id">ID: {{.Id}}</div>
+            </div>
+            {{else}}
+            <div class="card">
+                нет игроков в бд
+            </div>
+            {{end}}
+        </div>
+    </div>
+
+    <!-- Rewards Section -->
+    <div class="section">
+        <h2>ДОСТУПНЫЕ НАГРАДЫ</h2>
+        <div class="grid">
+            {{range .Rewards}}
+            <div class="card">
+                <div class="reward-desc">{{.Reward}}</div>
+            </div>
+            {{else}}
+            <div class="card">
+                нет наград в бд
+            </div>
+            {{end}}
+        </div>
+    </div>
+
+    <!-- Create Promo Form -->
+    <form action="/admin/promocode" method="post">
+        <div class="form-group">
+            <label>ПРОМОКОД</label>
+            <input type="text" name="code" placeholder="ПРОМОКОД ТУТ" required>
+        </div>
+        <div class="form-group">
+            <label>ИСПОЛЬЗОВАНИЯ</label>
+            <input type="text" name="max_uses" placeholder="МАКСИМАЛЬНОЕ КОЛИЧЕСТВО ИСПОЛЬЗОВАНИЙ" required>
+        </div>
+
+        <div class="form-group">
+            <label>ВЫБЕРИТЕ НАГРАДУ</label>
+            <div class="grid">
+                {{range .Rewards}}
+                <label class="card" style="cursor: pointer;">
+                    <input type="radio" name="reward_id" value="{{.Id}}" required>
+                    <div class="reward-desc">{{.Reward}}</div>
+                </label>
+                {{end}}
+            </div>
+        </div>
+
+        <button type="submit">СОЗДАТЬ ПРОМОКОД</button>
+    </form>
+</div>
+
+<script>
+    document.querySelector("form").addEventListener("submit", function(event) {
+        event.preventDefault(); // Остановить стандартную отправку формы
+
+        const form = event.target;
+        const formData = new FormData(form);
+
+        const jsonData = {};
+        formData.forEach((value, key) => {
+            jsonData[key] = key === "max_uses" ? parseInt(value, 10) : value;
+        });
+
+        fetch(form.action, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(jsonData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Ответ сервера:", data);
+                alert("консоль!");
+            })
+    });
+</script>
+
+</body>
+</html>

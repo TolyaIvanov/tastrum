@@ -8,13 +8,10 @@ services:
       - ./configs:/app/configs
     environment:
       - DB_URL=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
-      - REDIS_URL=redis://redis:6379
     networks:
       - app-network
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
 
   postgres:
@@ -31,18 +28,6 @@ services:
       - app-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]  # Исправлены параметры
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7.4-alpine
-    ports:
-      - "6380:6379"
-    networks:
-      - app-network
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 5s
       retries: 5

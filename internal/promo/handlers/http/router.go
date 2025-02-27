@@ -10,6 +10,8 @@ func NewGinRouter() *gin.Engine {
 	router := gin.Default()
 	router.Use(cors.Default())
 
+	router.LoadHTMLGlob("web/templates/admin.html")
+
 	router.GET("/api/check-health", func(c *gin.Context) {
 		log.Println("router.GET")
 		c.JSON(200, gin.H{"message": "rabotaet"})
@@ -18,7 +20,17 @@ func NewGinRouter() *gin.Engine {
 	return router
 }
 
-func (handler *Handlers) PromoRoutes(domain *gin.RouterGroup) {
-	domain.POST("/api/promocode", handler.CreatePromocode)
-	domain.GET("/api/promocode/:code", handler.ApplyPromocode)
+func (h *Handlers) PromoRoutes(domain *gin.RouterGroup) {
+	apiGroup := domain.Group("/api")
+	{
+		apiGroup.GET("/promocode/:code", h.ApplyPromocode)
+		apiGroup.GET("/rewards", h.GetRewards)
+		apiGroup.GET("/players", h.GetPlayers)
+	}
+	
+	admin := domain.Group("/admin")
+	{
+		admin.GET("/", h.AdminPage)
+		admin.POST("/promocode", h.CreatePromocode)
+	}
 }
