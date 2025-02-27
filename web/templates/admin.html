@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel</title>
     <style>
         * {
@@ -20,7 +22,7 @@
             margin: 0 auto;
             background: white;
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             padding: 2rem;
         }
 
@@ -29,6 +31,10 @@
             margin-bottom: 2rem;
             border-bottom: 2px solid #eee;
             padding-bottom: 1rem;
+        }
+
+        h2 {
+            margin-bottom: 2rem
         }
 
         .section {
@@ -51,7 +57,7 @@
         }
 
         .card:hover {
-            transform: translateY(-2px);
+            transform: translateY(-1px);
         }
 
         .player-name {
@@ -82,7 +88,7 @@
             font-weight: 500;
         }
 
-        input[type="text"] {
+        input[type="text"], input[type="number"] {
             width: 100%;
             padding: 0.8rem;
             border: 1px solid #ddd;
@@ -107,93 +113,89 @@
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>СОЗДАЕМ ПРОМОКОДЫ ОНЛАЙН БЕЗ РЕГИСТРАЦИИ</h1>
 
-    <!-- Players Section -->
+<div class="container">
+    <h1>Админ Панель</h1>
+
+    <!-- СПИСОК ИГРОКОВ -->
     <div class="section">
-        <h2>СПИСОК ИГРОКОВ</h2>
+        <h2>Список игроков</h2>
         <div class="grid">
             {{range .Players}}
             <div class="card">
                 <div class="player-name">{{.Username}}</div>
-                <div class="player-id">ID: {{.Id}}</div>
-            </div>
-            {{else}}
-            <div class="card">
-                нет игроков в бд
+                <div class="player-id">ID: {{.ID}}</div>
             </div>
             {{end}}
         </div>
+        {{if not .Players}}<p>Нет игроков в базе данных.</p>{{end}}
     </div>
 
-    <!-- Rewards Section -->
+    <!-- ДОСТУПНЫЕ НАГРАДЫ -->
     <div class="section">
-        <h2>ДОСТУПНЫЕ НАГРАДЫ</h2>
+        <h2>Доступные награды</h2>
         <div class="grid">
             {{range .Rewards}}
             <div class="card">
                 <div class="reward-desc">{{.Reward}}</div>
             </div>
-            {{else}}
-            <div class="card">
-                нет наград в бд
-            </div>
             {{end}}
         </div>
+        {{if not .Rewards}}<p>Нет наград в базе данных.</p>{{end}}
     </div>
 
-    <!-- Create Promo Form -->
-    <form action="/admin/promocode" method="post">
+    <!-- Форма создания промокода -->
+    <form id="promo-form" action="/admin/promocode" method="post">
         <div class="form-group">
-            <label>ПРОМОКОД</label>
-            <input type="text" name="code" placeholder="ПРОМОКОД ТУТ" required>
+            <label>Промокод</label>
+            <input type="text" name="code" placeholder="Введите промокод" required>
         </div>
         <div class="form-group">
-            <label>ИСПОЛЬЗОВАНИЯ</label>
-            <input type="text" name="max_uses" placeholder="МАКСИМАЛЬНОЕ КОЛИЧЕСТВО ИСПОЛЬЗОВАНИЙ" required>
+            <label>Максимальное количество использований</label>
+            <input type="number" name="max_uses" placeholder="Введите количество" required>
         </div>
-
         <div class="form-group">
-            <label>ВЫБЕРИТЕ НАГРАДУ</label>
+            <label>Выберите награду</label>
             <div class="grid">
                 {{range .Rewards}}
                 <label class="card" style="cursor: pointer;">
-                    <input type="radio" name="reward_id" value="{{.Id}}" required>
+                    <input type="radio" name="reward_id" value="{{.ID}}" required>
                     <div class="reward-desc">{{.Reward}}</div>
                 </label>
                 {{end}}
             </div>
         </div>
-
-        <button type="submit">СОЗДАТЬ ПРОМОКОД</button>
+        <button type="submit">Создать промокод</button>
     </form>
 </div>
 
 <script>
-    document.querySelector("form").addEventListener("submit", function(event) {
-        event.preventDefault(); // Остановить стандартную отправку формы
+    document.getElementById("promo-form").addEventListener("submit", async function (event) {
+        event.preventDefault();
 
         const form = event.target;
         const formData = new FormData(form);
-
         const jsonData = {};
+
         formData.forEach((value, key) => {
             jsonData[key] = key === "max_uses" ? parseInt(value, 10) : value;
         });
 
-        fetch(form.action, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(jsonData)
-        })
-            .then(response => response.json())
-            .then(data => {
-                console.log("Ответ сервера:", data);
-                alert("консоль!");
-            })
+        try {
+            const response = await fetch(form.action, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(jsonData),
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || "Ошибка при создании промокода");
+
+            alert("Промокод успешно создан!");
+            form.reset();
+        } catch (error) {
+            alert("Ошибка: " + error.message);
+        }
     });
 </script>
 

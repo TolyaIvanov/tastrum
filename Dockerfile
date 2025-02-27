@@ -6,11 +6,11 @@ RUN apk add --no-cache git postgresql-client \
 
 WORKDIR /app
 
-COPY go.mod go.sum .env ./
+COPY go.mod go.sum ./
 RUN go mod download
-RUN go mod tidy
 
 COPY . .
+RUN go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server ./cmd/main.go
 
 FROM alpine:latest
@@ -24,6 +24,5 @@ COPY --from=builder /app/configs /app/configs
 COPY --from=builder /app/migrations /app/migrations
 COPY --from=builder /app/.env /app/.env
 COPY --from=builder /app/web ./web
-COPY migrations /migrations
 
 CMD ["/app/server"]

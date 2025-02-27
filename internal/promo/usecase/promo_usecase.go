@@ -14,8 +14,9 @@ func (u *Usecase) ApplyPromocode(code string) (*DTOs.PromocodeResponse, error) {
 	}
 
 	return &DTOs.PromocodeResponse{
-		Code:    promocode.Code,
-		MaxUses: promocode.MaxUses,
+		Code:        promocode.Code,
+		CurrentUses: promocode.UsesCount,
+		MaxUses:     promocode.MaxUses,
 	}, nil
 }
 

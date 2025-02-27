@@ -4,28 +4,36 @@ import (
 	"fmt"
 	"log/slog"
 	"t_astrum/internal/config"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
 func NewDatabase(cfg config.Database, log *slog.Logger) *sqlx.DB {
-	DB, errOpen := sqlx.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
-		cfg.Host, cfg.Port, cfg.User, cfg.DBName, cfg.Password, cfg.SSLMode))
-	if errOpen != nil {
-		log.Error(errOpen.Error())
-		return nil
-	} else {
-		log.Info("Database opened")
+	dsn := fmt.Sprintf(
+		"host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
+		cfg.Host, cfg.Port, cfg.User, cfg.DBName, cfg.Password, cfg.SSLMode,
+	)
+
+	var DB *sqlx.DB
+	var err error
+
+	for i := 1; i <= 5; i++ { // Попытки подключения
+		DB, err = sqlx.Open("postgres", dsn)
+		if err == nil {
+			err = DB.Ping()
+		}
+
+		if err == nil {
+			log.Info("Connected to database")
+			return DB
+		}
+
+		log.Warn(fmt.Sprintf("try %d: cannot connect to db: %s", i, err))
+		time.Sleep(5 * time.Second) // Ждём перед повторной попыткой
 	}
 
-	errPing := DB.Ping()
-	if errPing != nil {
-		log.Error(errPing.Error())
-		return nil
-	} else {
-		log.Info("DB pinged")
-	}
-
-	return DB
+	log.Error("Failed to connect to database after 5 tries")
+	panic("Database connection failed")
 }

@@ -24,6 +24,7 @@ func (h *Handlers) AdminPage(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
+	
 	rewards, err := h.Usecase.GetRewards()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
