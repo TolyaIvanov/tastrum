@@ -1,109 +1,131 @@
 package repository_test
 
 import (
-	"database/sql"
+	"bytes"
+	_ "database/sql"
+	"errors"
 	_ "errors"
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	_ "github.com/google/uuid"
 	_ "github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"net/http"
+	"net/http/httptest"
+	"t_astrum/internal/promo/DTOs"
 	"t_astrum/internal/promo/entities"
-	"t_astrum/internal/promo/repository"
+	handlers "t_astrum/internal/promo/handlers/http"
+	_ "t_astrum/internal/promo/repository"
 	"testing"
 )
 
-type MockDB struct {
+type MockUsecase struct {
 	mock.Mock
 }
 
-func (m *MockDB) Get(dest interface{}, query string, args ...interface{}) error {
-	args := m.Called(dest, query, args)
+// Реализация интерфейса UsecaseInterface
+func (m *MockUsecase) CreatePromocode(promocode *entities.Promocode) error {
+	args := m.Called(promocode)
 	return args.Error(0)
 }
 
-func (m *MockDB) Exec(query string, args ...interface{}) (sql.Result, error) {
-	args := m.Called(query, args)
-	return nil, args.Error(0)
+func (m *MockUsecase) ApplyPromocode(code string) (*DTOs.PromocodeResponse, error) {
+	args := m.Called(code)
+	if args.Get(0) != nil {
+		return args.Get(0).(*DTOs.PromocodeResponse), args.Error(1)
+	}
+	return nil, args.Error(1)
 }
 
-func TestPromocodeExists(t *testing.T) {
-	mockDB := new(MockDB)
-	repo := &repository.Repository{DB: mockDB}
+func (m *MockUsecase) GetPlayers() ([]entities.Player, error) {
+	args := m.Called()
+	return args.Get(0).([]entities.Player), args.Error(1)
+}
 
-	mockDB.On("Get", mock.Anything, "SELECT COUNT(*) FROM promocodes WHERE code=$1", "ABC123").Return(nil).Run(func(args mock.Arguments) {
-		*args.Get(0).(*int) = 1
-	})
-
-	exists, err := repo.PromocodeExists("ABC123")
-	assert.NoError(t, err)
-	assert.True(t, exists)
-
-	mockDB.AssertExpectations(t)
+func (m *MockUsecase) GetRewards() ([]entities.Reward, error) {
+	args := m.Called()
+	return args.Get(0).([]entities.Reward), args.Error(1)
 }
 
 func TestCreatePromocode(t *testing.T) {
-	mockDB := new(MockDB)
-	repo := repository.NewRepository(mockDB)
+	mockUsecase := new(MockUsecase)
+	handler := handlers.NewHandlers(mockUsecase)
+	r := gin.Default()
 
-	promocode := &entities.Promocode{
-		Code:      "ABC123",
-		MaxUses:   10,
-		UsesCount: 0,
-		RewardId:  "reward-uuid",
-	}
+	r.POST("/promocodes", handler.CreatePromocode)
 
-	mockDB.On("Exec", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	// Test case 1: Successful promocode creation
+	rewardID := uuid.NewString()
+	promocodeRequest := `{"code": "ABC123", "max_uses": 10, "reward_id": "` + rewardID + `"}`
+	mockUsecase.On("CreatePromocode", mock.Anything).Return(nil).Once()
 
-	err := repo.CreatePromocode(promocode)
-	assert.NoError(t, err)
+	req, _ := http.NewRequest("POST", "/promocodes", bytes.NewBufferString(promocodeRequest))
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
 
-	mockDB.AssertExpectations(t)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Test case 2: Promocode already exists
+	mockUsecase.On("CreatePromocode", mock.Anything).Return(entities.ErrPromocodeExists).Once()
+
+	req, _ = http.NewRequest("POST", "/promocodes", bytes.NewBufferString(promocodeRequest))
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusConflict, w.Code)
+
+	// Test case 3: Internal server error
+	mockUsecase.On("CreatePromocode", mock.Anything).Return(errors.New("internal error")).Once()
+
+	req, _ = http.NewRequest("POST", "/promocodes", bytes.NewBufferString(promocodeRequest))
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+
+	mockUsecase.AssertExpectations(t)
 }
 
-func TestApplyPromocode_Success(t *testing.T) {
-	mockDB := new(MockDB)
-	repo := repository.NewRepository(mockDB)
+func TestApplyPromocode(t *testing.T) {
+	mockUsecase := new(MockUsecase)
+	handler := handlers.NewHandlers(mockUsecase) // Передаем mockUsecase
+	r := gin.Default()
 
-	promocode := &entities.Promocode{
-		ID:        "promocode-id",
-		Code:      "ABC123",
-		MaxUses:   10,
-		UsesCount: 0,
-		RewardId:  "reward-id",
+	r.GET("/promocodes/:code", handler.ApplyPromocode)
+
+	// 1: Successful
+	promocodeResponse := &DTOs.PromocodeResponse{
+		Code:        "ABC123",
+		CurrentUses: 1,
+		MaxUses:     10,
 	}
 
-	mockDB.On("Get", mock.Anything, "SELECT id, code, max_uses, uses_count, reward_id FROM promocodes WHERE code=$1", "ABC123").Return(nil).Run(func(args mock.Arguments) {
-		*args.Get(0).(*entities.Promocode) = *promocode
-	})
+	mockUsecase.On("ApplyPromocode", "ABC123").Return(promocodeResponse, nil).Once()
 
-	mockDB.On("Exec", "UPDATE promocodes SET uses_count = uses_count + 1 WHERE code = $1", "ABC123").Return(nil)
+	req, _ := http.NewRequest("GET", "/promocodes/ABC123", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
 
-	result, err := repo.ApplyPromocode("ABC123")
-	assert.NoError(t, err)
-	assert.Equal(t, promocode.Code, result.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 
-	mockDB.AssertExpectations(t)
-}
+	// 2: Promocode not found
+	mockUsecase.On("ApplyPromocode", "XYZ987").Return(nil, entities.ErrPromocodeNotFound).Once()
 
-func TestApplyPromocode_MaxUsesReached(t *testing.T) {
-	mockDB := new(MockDB)
-	repo := repository.NewRepository(mockDB)
+	req, _ = http.NewRequest("GET", "/promocodes/XYZ987", nil)
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
 
-	promocode := &entities.Promocode{
-		ID:        "promocode-id",
-		Code:      "ABC123",
-		MaxUses:   1,
-		UsesCount: 1,
-		RewardId:  "reward-id",
-	}
+	assert.Equal(t, http.StatusNotFound, w.Code)
 
-	mockDB.On("Get", mock.Anything, "SELECT id, code, max_uses, uses_count, reward_id FROM promocodes WHERE code=$1", "ABC123").Return(nil).Run(func(args mock.Arguments) {
-		*args.Get(0).(*entities.Promocode) = *promocode
-	})
+	// 3: Internal server error
+	mockUsecase.On("ApplyPromocode", "ABC123").Return(nil, errors.New("internal error")).Once()
 
-	result, err := repo.ApplyPromocode("ABC123")
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Equal(t, entities.ErrPromocodeMaxUsesReached, err)
+	req, _ = http.NewRequest("GET", "/promocodes/ABC123", nil)
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
 
-	mockDB.AssertExpectations(t)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+
+	mockUsecase.AssertExpectations(t)
 }

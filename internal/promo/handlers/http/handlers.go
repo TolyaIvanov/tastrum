@@ -10,13 +10,11 @@ import (
 )
 
 type Handlers struct {
-	Usecase *usecase.Usecase
+	Usecase usecase.UsecaseInterface
 }
 
-func NewHandlers(usecase *usecase.Usecase) *Handlers {
-	return &Handlers{
-		Usecase: usecase,
-	}
+func NewHandlers(usecase usecase.UsecaseInterface) *Handlers {
+	return &Handlers{Usecase: usecase}
 }
 
 func (h *Handlers) AdminPage(c *gin.Context) {
@@ -24,7 +22,7 @@ func (h *Handlers) AdminPage(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
-	
+
 	rewards, err := h.Usecase.GetRewards()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -60,7 +58,7 @@ func (h *Handlers) CreatePromocode(c *gin.Context) {
 		MaxUses: promocode.MaxUses,
 	}
 
-	c.JSON(http.StatusCreated, response)
+	c.JSON(http.StatusOK, response)
 }
 
 // ApplyPromocode применяет промокод и возвращает результат.
