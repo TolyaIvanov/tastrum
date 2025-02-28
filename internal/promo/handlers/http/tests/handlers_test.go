@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"net/http"
 	"net/http/httptest"
-	"t_astrum/internal/promo/DTOs"
 	"t_astrum/internal/promo/entities"
 	handlers "t_astrum/internal/promo/handlers/http"
 	"testing"
@@ -24,9 +23,9 @@ func (m *MockUsecase) CreatePromocode(promocode *entities.Promocode) error {
 	return args.Error(0)
 }
 
-func (m *MockUsecase) ApplyPromocode(code string) (*DTOs.PromocodeResponse, error) {
+func (m *MockUsecase) ApplyPromocode(code string) (*entities.Promocode, error) {
 	args := m.Called(code)
-	return args.Get(0).(*DTOs.PromocodeResponse), args.Error(1)
+	return args.Get(0).(*entities.Promocode), args.Error(1)
 }
 
 func (m *MockUsecase) GetPlayers() ([]entities.Player, error) {
@@ -41,7 +40,7 @@ func (m *MockUsecase) GetRewards() ([]entities.Reward, error) {
 
 func TestCreatePromocode(t *testing.T) {
 	mockUsecase := new(MockUsecase)
-	handler := handlers.NewHandlers(mockUsecase)
+	handler := handlers.NewHandlers(mockUsecase, mockUsecase, mockUsecase)
 	r := gin.Default()
 
 	r.POST("/promocodes", handler.CreatePromocode)
@@ -81,16 +80,16 @@ func TestCreatePromocode(t *testing.T) {
 
 func TestApplyPromocode(t *testing.T) {
 	mockUsecase := new(MockUsecase)
-	handler := handlers.NewHandlers(mockUsecase) // Передаем mockUsecase
+	handler := handlers.NewHandlers(mockUsecase, mockUsecase, mockUsecase)
 	r := gin.Default()
 
 	r.GET("/promocodes/:code", handler.ApplyPromocode)
 
 	// Test case 1: Successful promocode application
-	promocodeResponse := &DTOs.PromocodeResponse{
-		Code:        "ABC123",
-		CurrentUses: 1,
-		MaxUses:     10,
+	promocodeResponse := &entities.Promocode{
+		Code:      "ABC123",
+		UsesCount: 1,
+		MaxUses:   10,
 	}
 
 	mockUsecase.On("ApplyPromocode", "ABC123").Return(promocodeResponse, nil).Once()
@@ -102,7 +101,7 @@ func TestApplyPromocode(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	// Test case 2: Promocode not found
-	mockUsecase.On("ApplyPromocode", "XYZ987").Return((*DTOs.PromocodeResponse)(nil), entities.ErrPromocodeNotFound).Once()
+	mockUsecase.On("ApplyPromocode", "XYZ987").Return((*entities.Promocode)(nil), entities.ErrPromocodeNotFound).Once()
 
 	req, _ = http.NewRequest("GET", "/promocodes/XYZ987", nil)
 	w = httptest.NewRecorder()
@@ -111,7 +110,7 @@ func TestApplyPromocode(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 
 	// Test case 3: Internal server error
-	mockUsecase.On("ApplyPromocode", "ABC123").Return((*DTOs.PromocodeResponse)(nil), errors.New("internal error")).Once()
+	mockUsecase.On("ApplyPromocode", "ABC123").Return((*entities.Promocode)(nil), errors.New("internal error")).Once()
 
 	req, _ = http.NewRequest("GET", "/promocodes/ABC123", nil)
 	w = httptest.NewRecorder()

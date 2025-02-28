@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"net/http"
 	"net/http/httptest"
-	"t_astrum/internal/promo/DTOs"
 	"t_astrum/internal/promo/entities"
 	handlers "t_astrum/internal/promo/handlers/http"
 	_ "t_astrum/internal/promo/repository"
@@ -30,10 +29,10 @@ func (m *MockUsecase) CreatePromocode(promocode *entities.Promocode) error {
 	return args.Error(0)
 }
 
-func (m *MockUsecase) ApplyPromocode(code string) (*DTOs.PromocodeResponse, error) {
+func (m *MockUsecase) ApplyPromocode(code string) (*entities.Promocode, error) {
 	args := m.Called(code)
 	if args.Get(0) != nil {
-		return args.Get(0).(*DTOs.PromocodeResponse), args.Error(1)
+		return args.Get(0).(*entities.Promocode), args.Error(1)
 	}
 	return nil, args.Error(1)
 }
@@ -50,7 +49,7 @@ func (m *MockUsecase) GetRewards() ([]entities.Reward, error) {
 
 func TestCreatePromocode(t *testing.T) {
 	mockUsecase := new(MockUsecase)
-	handler := handlers.NewHandlers(mockUsecase)
+	handler := handlers.NewHandlers(mockUsecase, mockUsecase, mockUsecase)
 	r := gin.Default()
 
 	r.POST("/promocodes", handler.CreatePromocode)
@@ -89,16 +88,16 @@ func TestCreatePromocode(t *testing.T) {
 
 func TestApplyPromocode(t *testing.T) {
 	mockUsecase := new(MockUsecase)
-	handler := handlers.NewHandlers(mockUsecase) // Передаем mockUsecase
+	handler := handlers.NewHandlers(mockUsecase, mockUsecase, mockUsecase)
 	r := gin.Default()
 
 	r.GET("/promocodes/:code", handler.ApplyPromocode)
 
 	// 1: Successful
-	promocodeResponse := &DTOs.PromocodeResponse{
-		Code:        "ABC123",
-		CurrentUses: 1,
-		MaxUses:     10,
+	promocodeResponse := &entities.Promocode{
+		Code:      "ABC123",
+		UsesCount: 1,
+		MaxUses:   10,
 	}
 
 	mockUsecase.On("ApplyPromocode", "ABC123").Return(promocodeResponse, nil).Once()

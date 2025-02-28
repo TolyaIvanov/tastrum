@@ -22,6 +22,9 @@ func (r *Repository) CreatePromocode(promocode *entities.Promocode) error {
 		INSERT INTO promocodes (id, code, max_uses, uses_count, reward_id)
 		VALUES ($1, $2, $3, $4, $5)
 	`, promocode.ID, promocode.Code, promocode.MaxUses, promocode.UsesCount, promocode.RewardId)
+	if err != nil {
+		return err
+	}
 
 	return err
 }

@@ -5,8 +5,8 @@ import (
 )
 
 // GetRewards юзкейс для всех наград.
-func (u *Usecase) GetRewards() ([]entities.Reward, error) {
-	rewards, err := u.Repository.GetRewards()
+func (u *RewardUsecase) GetRewards() ([]entities.Reward, error) {
+	rewards, err := u.RewardRepo.GetRewards()
 	if err != nil {
 		return nil, err
 	}

@@ -2,8 +2,8 @@ package usecase
 
 import "t_astrum/internal/promo/entities"
 
-func (u *Usecase) GetPlayers() ([]entities.Player, error) {
-	players, err := u.Repository.GetPlayers()
+func (u *PlayerUsecase) GetPlayers() ([]entities.Player, error) {
+	players, err := u.PlayerRepo.GetPlayers()
 	if err != nil {
 		return nil, err
 	}

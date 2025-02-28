@@ -8,6 +8,8 @@ import (
 
 func NewGinRouter() *gin.Engine {
 	router := gin.Default()
+	router.Use(gin.Logger())
+	router.Use(gin.Recovery())
 	router.Use(cors.Default())
 
 	router.LoadHTMLGlob("web/templates/admin.html")

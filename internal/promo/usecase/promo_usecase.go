@@ -1,34 +1,34 @@
 package usecase
 
 import (
-	"t_astrum/internal/promo/DTOs"
+	"log"
 	"t_astrum/internal/promo/entities"
 	_ "t_astrum/internal/promo/repository"
 )
 
 // ApplyPromocode применяет промокод для игрока.
-func (u *Usecase) ApplyPromocode(code string) (*DTOs.PromocodeResponse, error) {
-	promocode, err := u.Repository.ApplyPromocode(code)
+func (u *PromocodeUsecase) ApplyPromocode(code string) (*entities.Promocode, error) {
+	promocode, err := u.PromoRepo.ApplyPromocode(code)
 	if err != nil {
 		return nil, err
 	}
 
-	return &DTOs.PromocodeResponse{
-		Code:        promocode.Code,
-		CurrentUses: promocode.UsesCount,
-		MaxUses:     promocode.MaxUses,
-	}, nil
+	return promocode, nil
 }
 
 // CreatePromocode создает новый промокод.
-func (u *Usecase) CreatePromocode(promocode *entities.Promocode) error {
-	exists, err := u.Repository.PromocodeExists(promocode.Code)
+func (u *PromocodeUsecase) CreatePromocode(promocode *entities.Promocode) error {
+	log.Println("CreatePromocode: received request", promocode)
+
+	exists, err := u.PromoRepo.PromocodeExists(promocode.Code)
 	if err != nil {
+		log.Println("Error in CreatePromocode:", err)
 		return err
 	}
 	if exists {
 		return entities.ErrPromocodeExists
 	}
 
-	return u.Repository.CreatePromocode(promocode)
+	log.Println("CreatePromocode: created promo", promocode)
+	return u.PromoRepo.CreatePromocode(promocode)
 }

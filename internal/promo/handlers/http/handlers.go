@@ -3,6 +3,7 @@ package v1
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"t_astrum/internal/promo/DTOs"
 	"t_astrum/internal/promo/entities"
@@ -10,20 +11,27 @@ import (
 )
 
 type Handlers struct {
-	Usecase usecase.UsecaseInterface
+	PromoUC  usecase.PromocodeUsecaseInterface
+	PlayerUC usecase.PlayerUsecaseInterface
+	RewardUC usecase.RewardUsecaseInterface
 }
 
-func NewHandlers(usecase usecase.UsecaseInterface) *Handlers {
-	return &Handlers{Usecase: usecase}
+// Конструктор
+func NewHandlers(promoUC usecase.PromocodeUsecaseInterface, playerUC usecase.PlayerUsecaseInterface, rewardUC usecase.RewardUsecaseInterface) *Handlers {
+	return &Handlers{
+		PromoUC:  promoUC,
+		PlayerUC: playerUC,
+		RewardUC: rewardUC,
+	}
 }
 
 func (h *Handlers) AdminPage(c *gin.Context) {
-	players, err := h.Usecase.GetPlayers()
+	players, err := h.PlayerUC.GetPlayers()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 
-	rewards, err := h.Usecase.GetRewards()
+	rewards, err := h.RewardUC.GetRewards()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
@@ -38,13 +46,14 @@ func (h *Handlers) AdminPage(c *gin.Context) {
 func (h *Handlers) CreatePromocode(c *gin.Context) {
 	var request DTOs.CreatePromocodeRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
+		log.Println("Error binding JSON:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
 		return
 	}
 
 	promocode := entities.NewPromocode(request.Code, request.MaxUses, request.RewardId)
 
-	if err := h.Usecase.CreatePromocode(promocode); err != nil {
+	if err := h.PromoUC.CreatePromocode(promocode); err != nil {
 		if errors.Is(err, entities.ErrPromocodeExists) {
 			c.JSON(http.StatusConflict, gin.H{"error": "promocode already exists"})
 			return
@@ -65,7 +74,7 @@ func (h *Handlers) CreatePromocode(c *gin.Context) {
 func (h *Handlers) ApplyPromocode(c *gin.Context) {
 	code := c.Param("code")
 
-	promocode, err := h.Usecase.ApplyPromocode(code)
+	promocode, err := h.PromoUC.ApplyPromocode(code)
 	if err != nil {
 		if errors.Is(err, entities.ErrPromocodeNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Promocode not found"})
@@ -78,7 +87,7 @@ func (h *Handlers) ApplyPromocode(c *gin.Context) {
 
 	response := DTOs.PromocodeResponse{
 		Code:        promocode.Code,
-		CurrentUses: promocode.CurrentUses,
+		CurrentUses: promocode.UsesCount,
 		MaxUses:     promocode.MaxUses,
 	}
 
@@ -87,7 +96,7 @@ func (h *Handlers) ApplyPromocode(c *gin.Context) {
 
 // GetPlayers возвращает всех игроков из бд.
 func (h *Handlers) GetPlayers(c *gin.Context) {
-	players, err := h.Usecase.GetPlayers()
+	players, err := h.PlayerUC.GetPlayers()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve players: " + err.Error()})
 		return
@@ -108,7 +117,7 @@ func (h *Handlers) GetPlayers(c *gin.Context) {
 
 // GetRewards возвращает все reward из бд.
 func (h *Handlers) GetRewards(c *gin.Context) {
-	rewards, err := h.Usecase.GetRewards()
+	rewards, err := h.RewardUC.GetRewards()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve rewards: " + err.Error()})
 		return
