@@ -52,12 +52,12 @@ func (app *App) Run() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := server.Shutdown(ctx); err != nil {
-			app.log.Error("Server Shutdown:", err)
+			app.log.Error("Server Shutdown:", slog.Any("error", err))
 		}
 
 		// Close the database connection
 		if err := app.DB.Close(); err != nil {
-			app.log.Error("Database connection close failed: %v", err)
+			app.log.Error("Database connection close failed: %v", slog.Any("error", err))
 		} else {
 			app.log.Info("Database connection closed")
 		}
@@ -66,7 +66,7 @@ func (app *App) Run() error {
 	app.log.Info("Server is starting on port", slog.String("addr", server.Addr))
 
 	if err := app.gin.Run(server.Addr); err != nil {
-		app.log.Error("Error starting server: %v", err)
+		app.log.Error("Error starting server: %v", slog.Any("error", err))
 		return err
 	}
 
